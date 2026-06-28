@@ -4,15 +4,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ClimateConfig {
-    // Temperature settings
+    // Temperature settings - Vietnamese climate optimized
     public double defaultSmoothingFactor = 0.05;
-    public double comfortMin = 23.0;
-    public double comfortMax = 33.0;
-    public double coldSlowness = 18.0;
-    public double coldExtreme = 12.0;
-    public double hotDamage = 38.0;
-    public double hotExtreme = 42.0;
-    public double equilibrium = 36.5;
+    public double comfortMin = 20.0;        // Comfortable minimum: 20°C
+    public double comfortMax = 33.0;        // Comfortable maximum: 33°C (người Việt quen 30-33°C)
+    public double coldSlowness = 15.0;      // Slowness I starts at 15°C
+    public double coldExtreme = 8.0;        // Extreme cold (freeze) at 8°C
+    public double hotDamage = 37.0;         // Weakness II starts at 37°C (35°C bình thường ở VN)
+    public double hotExtreme = 40.0;        // Nausea at 40°C (39°C thường gặp mùa hè miền Bắc)
+    public double equilibrium = 37.0;       // Body equilibrium: 37°C
 
     // Altitude settings
     public int altitudeBaseY = 64;

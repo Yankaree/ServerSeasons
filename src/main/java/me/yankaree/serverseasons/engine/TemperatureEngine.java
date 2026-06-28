@@ -163,25 +163,24 @@ public class TemperatureEngine {
             return;
         }
 
-        if (temp > cfg.comfortMax) {
-            player.getFoodData().addExhaustion(0.8f);
-        }
+        // Hot effects
         if (temp > cfg.hotDamage) {
-            player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 40, 0, true, false));
+            // Weakness II at 35°C+ (Vietnamese climate: stronger heat effect)
+            player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 40, 1, true, false));
         }
-        if (temp > cfg.hotExtreme) {
-            player.hurt(player.damageSources().generic(), 1.5f);
+        if (temp >= 40.0) {
+            // REMOVED: heat damage - only nausea at 40°C+
             player.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 100, 0, true, false));
         }
 
-        if (temp < cfg.comfortMin) {
-            player.getFoodData().addExhaustion(0.8f);
-        }
-        if (temp < cfg.coldSlowness && temp >= cfg.coldExtreme) {
+        // Cold effects
+        if (temp < 15.0 && temp >= 8.0) {
+            // Slowness I in 8–15°C range
             player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 40, 0, true, false));
         }
         
-        if (temp < cfg.coldExtreme) {
+        if (temp < 8.0) {
+            // Extreme cold below 8°C: Slowness II + damage + freeze
             player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 40, 1, true, false));
             player.hurt(player.damageSources().generic(), 1.0f);
             player.setTicksFrozen(Math.min(player.getTicksFrozen() + 15, 140));
