@@ -19,21 +19,24 @@ public class ActionbarRenderer {
         String color;
         String state;
 
-        if (temp <= cfg.coldExtreme) {
+        if (temp < cfg.coldExtreme) {  // Below 0°C
             color = "§9";
-            state = "Freezing ❄";
-        } else if (temp < cfg.comfortMin) {
+            state = "Freezing ❄ (Damage)";
+        } else if (temp < cfg.comfortMin) {  // 0-18°C
             color = "§b";
-            state = "Cool";
-        } else if (temp <= cfg.comfortMax) {
+            state = "Cold";
+        } else if (temp <= cfg.comfortMax) {  // 18-32°C
             color = "§a";
             state = "Comfortable";
-        } else if (temp < cfg.hotDamage) {
+        } else if (temp < cfg.hotDamage) {  // 32-40°C
             color = "§6";
             state = "Hot";
-        } else {
+        } else if (temp < cfg.hotExtreme) {  // 40-45°C
+            color = "§e";
+            state = "Very Hot ⚠";
+        } else {  // 45°C+
             color = "§c";
-            state = "Heatstroke Risk 🔥";
+            state = "DANGER! (Damage) 🔥";
         }
 
         String seasonIcon = SeasonManager.getIcon();

@@ -62,7 +62,8 @@ public class WeatherSystem {
             rain = true;
             thunder = true;
         } else {
-            rain = true;
+            // Snow: client-side biome effect; do not set server-side rain flag
+            rain = false;
             thunder = false;
         }
 
