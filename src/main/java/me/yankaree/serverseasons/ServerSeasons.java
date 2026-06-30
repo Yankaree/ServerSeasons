@@ -4,6 +4,7 @@ import me.yankaree.serverseasons.config.ConfigLoader;
 import me.yankaree.serverseasons.command.ClimateCommandRegistry;
 import me.yankaree.serverseasons.engine.TemperatureEngine;
 import me.yankaree.serverseasons.event.ClimateEventManager;
+import me.yankaree.serverseasons.event.EventForecast;
 import me.yankaree.serverseasons.hud.ActionbarRenderer;
 import me.yankaree.serverseasons.season.SeasonManager;
 import me.yankaree.serverseasons.weather.WeatherSystem;
@@ -54,6 +55,13 @@ public class ServerSeasons implements ModInitializer {
 			tickCounter++;
 			if (tickCounter >= 20) {
 				tickCounter = 0;
+				
+				// ========== DAILY TASKS ==========
+				// Generate daily forecast at day 0 (server start or day change)
+				long currentDay = server.getTickCount() / 24000;
+				if (server.getTickCount() % 24000 == 0) {
+					EventForecast.generateDailyForecast(server);
+				}
 				
 				ClimateEventManager.tick(server);
 				WeatherSystem.tick(server);
