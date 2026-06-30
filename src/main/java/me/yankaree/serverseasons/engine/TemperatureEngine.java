@@ -88,36 +88,62 @@ public class TemperatureEngine {
 
         double blockInfluence = 0.0;
         BlockPos.MutableBlockPos checkPos = new BlockPos.MutableBlockPos();
-        
-        for (int dx = -3; dx <= 3; dx++) {
-            for (int dy = -1; dy <= 2; dy++) {
-                for (int dz = -3; dz <= 3; dz++) {
+
+// === MASSIVE HEAT & COLD SOURCE DETECTION (8 block radius) ===
+        for (int dx = -8; dx <= 8; dx++) {
+            for (int dy = -2; dy <= 3; dy++) {
+                for (int dz = -8; dz <= 8; dz++) {
                     checkPos.set(pos.getX() + dx, pos.getY() + dy, pos.getZ() + dz);
                     if (world.hasChunkAt(checkPos)) {
                         BlockState state = world.getBlockState(checkPos);
                         double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
                         
-                        if (dist < 4.0) {
-                            if (state.is(Blocks.CAMPFIRE) || state.is(Blocks.SOUL_CAMPFIRE)) {
-                                blockInfluence += (4.0 - dist) * 1.5;
-                            } else if (state.is(Blocks.FIRE) || state.is(Blocks.SOUL_FIRE)) {
-                                blockInfluence += (3.0 - dist) * 1.0;
-                            } else if (state.is(Blocks.MAGMA_BLOCK)) {
-                                blockInfluence += (3.0 - dist) * 0.5;
-                            } else if (state.is(Blocks.BLUE_ICE)) {
-                                blockInfluence -= (4.0 - dist) * 1.5;
-                            } else if (state.is(Blocks.PACKED_ICE)) {
-                                blockInfluence -= (3.0 - dist) * 1.0;
-                            } else if (state.is(Blocks.ICE)) {
-                                blockInfluence -= (3.0 - dist) * 0.7;
+                        // === HEAT SOURCES (STRONG) ===
+                        if (dist <= 8.0) {
+                            // LAVA - EXTREME HEAT (15°C max) ← HIGHEST HEAT
+                            if (state.is(Blocks.LAVA)) {
+                                blockInfluence += Math.max(0, (8.0 - dist) * 1.875);  // Max 15°C at distance 0
+                            }
+                            // MAGMA BLOCK - VERY HOT (10°C max)
+                            else if (state.is(Blocks.MAGMA_BLOCK)) {
+                                blockInfluence += Math.max(0, (8.0 - dist) * 1.25);  // Max 10°C at distance 0
+                            }
+                            // CAMPFIRE - HOT (8°C max)
+                            else if (state.is(Blocks.CAMPFIRE) || state.is(Blocks.SOUL_CAMPFIRE)) {
+                                blockInfluence += Math.max(0, (8.0 - dist) * 1.0);   // Max 8°C at distance 0
+                            }
+                            // FIRE - MODERATE HEAT (6°C max)
+                            else if (state.is(Blocks.FIRE) || state.is(Blocks.SOUL_FIRE)) {
+                                blockInfluence += Math.max(0, (8.0 - dist) * 0.75);  // Max 6°C at distance 0
+                            }
+                            // NETHER BLOCKS - SUBTLE HEAT (4°C max)
+                            else if (state.is(Blocks.NETHERRACK) || state.is(Blocks.CRIMSON_NYLIUM) || state.is(Blocks.WARPED_NYLIUM)) {
+                                blockInfluence += Math.max(0, (8.0 - dist) * 0.5);   // Max 4°C at distance 0
+                            }
+                        }
+                        
+                        // === COLD SOURCES (STRONG) ===
+                        if (dist <= 8.0) {
+                            // BLUE ICE - EXTREMELY COLD (10°C reduction max)
+                            if (state.is(Blocks.BLUE_ICE)) {
+                                blockInfluence -= Math.max(0, (8.0 - dist) * 1.25);  // Max -10°C at distance 0
+                            }
+                            // PACKED ICE - VERY COLD (8°C reduction max)
+                            else if (state.is(Blocks.PACKED_ICE)) {
+                                blockInfluence -= Math.max(0, (8.0 - dist) * 1.0);   // Max -8°C at distance 0
+                            }
+                            // REGULAR ICE - COLD (5°C reduction max)
+                            else if (state.is(Blocks.ICE)) {
+                                blockInfluence -= Math.max(0, (8.0 - dist) * 0.625); // Max -5°C at distance 0
                             }
                         }
                     }
                 }
             }
         }
-        
-        blockInfluence = Math.max(-12.0, Math.min(12.0, blockInfluence));
+
+        // Clamp total block influence to prevent extreme values
+        blockInfluence = Math.max(-15.0, Math.min(15.0, blockInfluence));
         targetTemp += blockInfluence;
 
         double humidity = HumiditySystem.getHumidity(world, pos);
@@ -163,17 +189,21 @@ public class TemperatureEngine {
             return;
         }
 
-        // ========== HOT EFFECTS (Temperature > 40°C) ==========
-        if (temp > cfg.hotDamage) {
-            // Weakness II at 40°C+
-            player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 40, 1, true, false));
-        }
-        
-        if (temp >= cfg.hotExtreme) {
-            // DAMAGE + NAUSEA only at 45°C and above
-            player.hurt(player.damageSources().generic(), 1.5f);  // 1.5f damage per tick
-            player.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 100, 0, true, false));
-        }
+// ========== HOT EFFECTS (Temperature > 40°C) ==========
+    if (temp > cfg.hotDamage) {
+        // Weakness II at 40°C+
+        player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 40, 1, true, false));
+    }
+    
+    // NAUSEA at 42°C and above
+    if (temp >= 42.0) {
+        player.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 100, 0, true, false));
+    }
+    
+    // DAMAGE only at 45°C and above
+    if (temp >= cfg.hotExtreme) {
+        player.hurt(player.damageSources().generic(), 1.5f);  // 1.5f damage per tick
+    }
 
         // ========== COLD EFFECTS (Temperature < 10°C) ==========
         if (temp < cfg.coldSlowness && temp >= cfg.coldExtreme) {

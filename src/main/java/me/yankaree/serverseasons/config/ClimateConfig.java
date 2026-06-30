@@ -11,7 +11,7 @@ public class ClimateConfig {
     public double coldSlowness = 10.0;      // Slowness I starts at 10°C
     public double coldExtreme = 0.0;        // Extreme cold (freeze) at 0°C (changed from 8°C)
     public double hotDamage = 40.0;         // Weakness II starts at 40°C
-    public double hotExtreme = 45.0;        // Damage + Nausea at 45°C (changed from 40°C)
+    public double hotExtreme = 45.0;        // DAMAGE only at 45°C (Nausea at 42°C, hardcoded)
     public double equilibrium = 37.0;       // Body equilibrium: 37°C
 
     // Altitude settings

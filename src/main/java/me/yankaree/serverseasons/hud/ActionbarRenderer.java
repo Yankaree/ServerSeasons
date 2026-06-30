@@ -31,9 +31,12 @@ public class ActionbarRenderer {
         } else if (temp < cfg.hotDamage) {  // 32-40°C
             color = "§6";
             state = "Hot";
-        } else if (temp < cfg.hotExtreme) {  // 40-45°C
+        } else if (temp < 42.0) {  // 40-42°C
             color = "§e";
             state = "Very Hot ⚠";
+        } else if (temp < cfg.hotExtreme) {  // 42-45°C
+            color = "§e";
+            state = "Nausea 🔴";
         } else {  // 45°C+
             color = "§c";
             state = "DANGER! (Damage) 🔥";
