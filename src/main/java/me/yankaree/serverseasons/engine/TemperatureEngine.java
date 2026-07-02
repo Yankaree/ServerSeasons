@@ -20,6 +20,21 @@ import java.util.UUID;
 
 public class TemperatureEngine {
     private static final Map<UUID, Double> playerTemperatures = new HashMap<>();
+    private static final Map<UUID, CachedClimateData> playerCache = new HashMap<>();
+    
+    private static class CachedClimateData {
+        double targetTemperature;
+        long lastUpdate;
+        int lastX, lastY, lastZ;
+        
+        CachedClimateData(double temp, long time, int x, int y, int z) {
+            this.targetTemperature = temp;
+            this.lastUpdate = time;
+            this.lastX = x;
+            this.lastY = y;
+            this.lastZ = z;
+        }
+    }
 
     public static double getPlayerTemperature(UUID uuid) {
         return playerTemperatures.getOrDefault(uuid, ConfigLoader.getConfig().equilibrium);

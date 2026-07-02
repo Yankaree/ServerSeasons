@@ -7,7 +7,7 @@ import me.yankaree.serverseasons.season.SeasonManager;
 import me.yankaree.serverseasons.event.ClimateEventManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.storage.ServerLevelData;
+import me.yankaree.serverseasons.ServerSeasons;
 
 import java.util.Random;
 
@@ -23,6 +23,10 @@ public class WeatherSystem {
         weatherTicksRemaining--;
         if (weatherTicksRemaining <= 0) {
             rollWeather(server);
+        }
+        
+        if (weatherTicksRemaining > 0 && weatherTicksRemaining % 24000 == 0) {
+            ServerSeasons.LOGGER.debug("Weather ticks remaining: " + weatherTicksRemaining / 20 + "s");
         }
     }
 
@@ -44,6 +48,15 @@ public class WeatherSystem {
         }
 
         double total = pClear + pRain + pThunder + pSnow;
+        if (total <= 0) {
+            ServerSeasons.LOGGER.warn("Weather probabilities sum to 0, using defaults");
+            pClear = 50.0;
+            pRain = 30.0;
+            pThunder = 15.0;
+            pSnow = 5.0;
+            total = 100.0;
+        }
+
         double roll = random.nextDouble() * total;
 
         int duration = 12000 + random.nextInt(12000);
@@ -62,7 +75,6 @@ public class WeatherSystem {
             rain = true;
             thunder = true;
         } else {
-            // Snow: client-side biome effect; do not set server-side rain flag
             rain = false;
             thunder = false;
         }
@@ -71,10 +83,12 @@ public class WeatherSystem {
             net.minecraft.world.level.saveddata.WeatherData data = world.getWeatherData();
             data.setRaining(rain);
             data.setThundering(thunder);
-            data.setRainTime(rain ? duration : 0);
-            data.setThunderTime(thunder ? duration : 0);
+            data.setRainTime(duration);
+            data.setThunderTime(duration);
             data.setClearWeatherTime(rain ? 0 : duration);
             data.setDirty();
         }
+        
+        ServerSeasons.LOGGER.info("Weather rolled: rain=" + rain + ", thunder=" + thunder + ", duration=" + duration + " ticks (" + (duration / 24000) + " days)");
     }
 }

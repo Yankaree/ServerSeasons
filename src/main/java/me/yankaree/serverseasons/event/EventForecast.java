@@ -20,7 +20,6 @@ public class EventForecast {
     public static void generateDailyForecast(MinecraftServer server) {
         long currentDay = server.getTickCount() / 24000;
         
-        // Only generate once per day
         if (currentDay == lastForecastDay) {
             return;
         }
@@ -31,15 +30,12 @@ public class EventForecast {
         Season currentSeason = SeasonManager.getCurrentSeason();
         ClimateConfig cfg = ConfigLoader.getConfig();
 
-        // Generate forecast for next 3 days
         for (int day = 0; day < 3; day++) {
             ClimateEvent predictedEvent = null;
             
-            // Filter valid events for this day
             List<ClimateEvent> validEvents = new ArrayList<>();
             
             for (ClimateEvent event : ClimateEvent.values()) {
-                // Skip season-restricted events
                 if (event == ClimateEvent.TROPICAL_STORM && currentSeason != Season.SUMMER) {
                     continue;
                 }
@@ -53,57 +49,45 @@ public class EventForecast {
                 }
             }
 
-            // Apply event limitations
             List<ClimateEvent> filteredEvents = new ArrayList<>(validEvents);
             
-            // Limit to maximum 2 days of event in a row
-            if (day > 0 && day < 3) {
-                // Count events in the last 2 days (including today)
-                int eventCount = 0;
-                for (int i = Math.max(0, upcomingEvents.size() - 2); i < upcomingEvents.size(); i++) {
-                    if (upcomingEvents.get(i) != null) {
-                        eventCount++;
+            if (recentEvents.size() >= 2) {
+                int recentEventCount = 0;
+                for (int i = recentEvents.size() - 1; i >= 0 && i >= recentEvents.size() - 2; i--) {
+                    if (recentEvents.get(i) != null) {
+                        recentEventCount++;
                     }
                 }
                 
-                if (eventCount >= 2) {
-                    // Already had 2 events in recent days, clear for today
+                if (recentEventCount >= 2) {
                     filteredEvents.clear();
                 }
             }
             
-            // Apply 4-day cooldown after an event
-            if (day > 0) {
-                for (int i = 0; i < recentEvents.size(); i++) {
-                    ClimateEvent event = recentEvents.get(i);
-                    if (event != null) {
-                        int daysSinceEvent = recentEvents.size() - 1 - i;
-                        if (daysSinceEvent <= 3) {
-                            // Remove this event from valid options (4-day cooldown)
-                            filteredEvents.remove(event);
-                        }
+            for (int i = 0; i < recentEvents.size(); i++) {
+                ClimateEvent event = recentEvents.get(i);
+                if (event != null) {
+                    int daysSinceEvent = recentEvents.size() - 1 - i;
+                    if (daysSinceEvent < 4 && filteredEvents.contains(event)) {
+                        filteredEvents.remove(event);
                     }
                 }
             }
 
-            // Pick random event from valid events
             if (!filteredEvents.isEmpty()) {
                 predictedEvent = filteredEvents.get(random.nextInt(filteredEvents.size()));
             }
 
             upcomingEvents.add(predictedEvent);
             
-            // Check for 3-day warning (event in days 1-3)
             if (predictedEvent != null && day == 2) {
                 broadcastEventWarning(server, predictedEvent, day + 1);
             }
         }
 
-        // Update recent events list (keep only last 4 days)
         recentEvents.clear();
         recentEvents.addAll(upcomingEvents);
 
-        // Broadcast forecast to all players
         broadcastForecast(server);
     }
 
