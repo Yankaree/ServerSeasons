@@ -24,10 +24,6 @@ public class WeatherSystem {
         if (weatherTicksRemaining <= 0) {
             rollWeather(server);
         }
-        
-        if (weatherTicksRemaining > 0 && weatherTicksRemaining % 24000 == 0) {
-            ServerSeasons.LOGGER.debug("Weather ticks remaining: " + weatherTicksRemaining / 20 + "s");
-        }
     }
 
     public static void rollWeather(MinecraftServer server) {
@@ -35,9 +31,9 @@ public class WeatherSystem {
         ClimateConfig cfg = ConfigLoader.getConfig();
         ClimateConfig.SeasonConfig sCfg = cfg.seasons.get(season.getId());
 
-        double pClear = 50.0;
-        double pRain = 30.0;
-        double pThunder = 15.0;
+        double pClear = 60.0;
+        double pRain = 25.0;
+        double pThunder = 10.0;
         double pSnow = 5.0;
 
         if (sCfg != null) {
@@ -62,32 +58,32 @@ public class WeatherSystem {
         int duration = 12000 + random.nextInt(12000);
         weatherTicksRemaining = duration;
 
-        boolean rain = false;
-        boolean thunder = false;
+    boolean rain;
+    boolean thunder;
 
-        if (roll < pClear) {
-            rain = false;
-            thunder = false;
-        } else if (roll < pClear + pRain) {
-            rain = true;
-            thunder = false;
-        } else if (roll < pClear + pRain + pThunder) {
-            rain = true;
-            thunder = true;
-        } else {
-            rain = false;
-            thunder = false;
-        }
+    if (roll < pClear) {
+        rain = false;
+        thunder = false;
+    } else if (roll < pClear + pRain) {
+        rain = true;
+        thunder = false;
+    } else if (roll < pClear + pRain + pThunder) {
+        rain = true;
+        thunder = true;
+    } else {
+        rain = true;
+        thunder = false;
+    }
 
-        for (ServerLevel world : server.getAllLevels()) {
-            net.minecraft.world.level.saveddata.WeatherData data = world.getWeatherData();
-            data.setRaining(rain);
-            data.setThundering(thunder);
-            data.setRainTime(duration);
-            data.setThunderTime(duration);
-            data.setClearWeatherTime(rain ? 0 : duration);
-            data.setDirty();
-        }
+    for (ServerLevel world : server.getAllLevels()) {
+        net.minecraft.world.level.saveddata.WeatherData data = world.getWeatherData();
+        data.setRaining(rain);
+        data.setThundering(thunder);
+        data.setRainTime(rain ? duration : 0);
+        data.setThunderTime(thunder ? duration : 0);
+        data.setClearWeatherTime(rain ? 0 : duration);
+        data.setDirty();
+    }
         
         ServerSeasons.LOGGER.info("Weather rolled: rain=" + rain + ", thunder=" + thunder + ", duration=" + duration + " ticks (" + (duration / 24000) + " days)");
     }

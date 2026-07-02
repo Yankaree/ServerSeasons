@@ -20,21 +20,6 @@ import java.util.UUID;
 
 public class TemperatureEngine {
     private static final Map<UUID, Double> playerTemperatures = new HashMap<>();
-    private static final Map<UUID, CachedClimateData> playerCache = new HashMap<>();
-    
-    private static class CachedClimateData {
-        double targetTemperature;
-        long lastUpdate;
-        int lastX, lastY, lastZ;
-        
-        CachedClimateData(double temp, long time, int x, int y, int z) {
-            this.targetTemperature = temp;
-            this.lastUpdate = time;
-            this.lastX = x;
-            this.lastY = y;
-            this.lastZ = z;
-        }
-    }
 
     public static double getPlayerTemperature(UUID uuid) {
         return playerTemperatures.getOrDefault(uuid, ConfigLoader.getConfig().equilibrium);
@@ -50,7 +35,7 @@ public class TemperatureEngine {
 
     public static double computeTargetTemperature(ServerPlayer player) {
         ServerLevel world = (ServerLevel) player.level();
-        BlockPos pos = new BlockPos((int) player.getX(), (int) player.getY(), (int) player.getZ());
+        BlockPos pos = BlockPos.containing(player.getX(), player.getY(), player.getZ());
         ClimateConfig cfg = ConfigLoader.getConfig();
 
         CaveSystem.CaveState cave = CaveSystem.getCaveState(world, pos);
@@ -207,29 +192,29 @@ public class TemperatureEngine {
 // ========== HOT EFFECTS (Temperature > 40°C) ==========
     if (temp > cfg.hotDamage) {
         // Weakness II at 40°C+
-        player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 40, 1, true, false));
+        player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 60, 1, true, false));
     }
     
     // NAUSEA at 42°C and above
     if (temp >= 42.0) {
-        player.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 100, 0, true, false));
+        player.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 200, 0, true, false));
     }
     
     // DAMAGE only at 45°C and above
     if (temp >= cfg.hotExtreme) {
-        player.hurt(player.damageSources().generic(), 1.5f);  // 1.5f damage per tick
+        player.hurt(player.damageSources().onFire(), 1.5f);
     }
 
         // ========== COLD EFFECTS (Temperature < 10°C) ==========
         if (temp < cfg.coldSlowness && temp >= cfg.coldExtreme) {
             // Slowness I in 0–10°C range
-            player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 40, 0, true, false));
+            player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 60, 0, true, false));
         }
         
         if (temp < cfg.coldExtreme) {
             // DAMAGE + FREEZE only below 0°C (extreme cold)
-            player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 40, 1, true, false));
-            player.hurt(player.damageSources().generic(), 1.0f);  // 1.0f damage per tick
+            player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 60, 1, true, false));
+            player.hurt(player.damageSources().freeze(), 1.0f);
             player.setTicksFrozen(Math.min(player.getTicksFrozen() + 15, 140));
         } else {
             // Gradually thaw if above 0°C

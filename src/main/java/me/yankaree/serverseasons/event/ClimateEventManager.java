@@ -55,7 +55,10 @@ public class ClimateEventManager {
     public static void stopActiveEvent() {
         if (activeEvent != null) {
             ServerSeasons.LOGGER.info("Climate event stopped: " + activeEvent.getDisplayName());
-            cooldowns.put(activeEvent, ConfigLoader.getConfig().events.get(activeEvent.getId()).cooldownTicks);
+            ClimateConfig.EventConfig eCfg = ConfigLoader.getConfig().events.get(activeEvent.getId());
+            if (eCfg != null) {
+                cooldowns.put(activeEvent, eCfg.cooldownTicks);
+            }
             checkChaining(activeEvent);
             activeEvent = null;
             eventDurationRemaining = 0;
@@ -151,17 +154,31 @@ public class ClimateEventManager {
     }
 
     private static void applyWeatherOverride(MinecraftServer server, String override) {
-        boolean rain = override.equalsIgnoreCase("rain") || override.equalsIgnoreCase("snow") || override.equalsIgnoreCase("thunder");
-        boolean thunder = override.equalsIgnoreCase("thunder");
-        int duration = 100;
+        applyWeatherOverride(server, override, eventDurationRemaining);
+    }
+
+    private static void applyWeatherOverride(MinecraftServer server, String override, int duration) {
+        boolean rain = false;
+        boolean thunder = false;
+
+        if (override.equalsIgnoreCase("rain")) {
+            rain = true;
+        } else if (override.equalsIgnoreCase("snow")) {
+            rain = true;
+        } else if (override.equalsIgnoreCase("thunder")) {
+            rain = true;
+            thunder = true;
+        }
+
+        int clampedDuration = Math.max(duration, 200);
 
         for (ServerLevel world : server.getAllLevels()) {
             net.minecraft.world.level.saveddata.WeatherData data = world.getWeatherData();
             data.setRaining(rain);
             data.setThundering(thunder);
-            data.setRainTime(rain ? duration : 0);
-            data.setThunderTime(thunder ? duration : 0);
-            data.setClearWeatherTime(rain ? 0 : duration);
+            data.setRainTime(rain ? clampedDuration : 0);
+            data.setThunderTime(thunder ? clampedDuration : 0);
+            data.setClearWeatherTime(rain ? 0 : clampedDuration);
             data.setDirty();
         }
     }

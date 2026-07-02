@@ -82,7 +82,7 @@ public class ClimateCommandRegistry {
                 .executes(ctx -> {
                     if (ctx.getSource().getEntity() instanceof ServerPlayer) {
                         ServerPlayer p = (ServerPlayer) ctx.getSource().getEntity();
-                        BlockPos pos = new BlockPos((int) p.getX(), (int) p.getY(), (int) p.getZ());
+                        BlockPos pos = BlockPos.containing(p.getX(), p.getY(), p.getZ());
                         double hum = HumiditySystem.getHumidity((net.minecraft.server.level.ServerLevel) p.level(), pos);
                         ctx.getSource().sendSuccess(() -> Component.literal("§7Your region humidity: §9" + Math.round(hum * 100) + "%"), false);
                         return 1;
@@ -187,6 +187,7 @@ public class ClimateCommandRegistry {
                             ClimateConfig.EventConfig ec = ConfigLoader.getConfig().events.get(event.getId());
                             if (ec != null) {
                                 ec.enabled = true;
+                                ConfigLoader.save();
                                 ctx.getSource().sendSuccess(() -> Component.literal("§aEvent §e" + event.getDisplayName() + " §aenabled."), false);
                                 return 1;
                             }
@@ -212,6 +213,7 @@ public class ClimateCommandRegistry {
                             ClimateConfig.EventConfig ec = ConfigLoader.getConfig().events.get(event.getId());
                             if (ec != null) {
                                 ec.enabled = false;
+                                ConfigLoader.save();
                                 ctx.getSource().sendSuccess(() -> Component.literal("§cEvent §e" + event.getDisplayName() + " §cdisabled."), false);
                                 return 1;
                             }
@@ -239,6 +241,7 @@ public class ClimateCommandRegistry {
                                 ClimateConfig.EventConfig ec = ConfigLoader.getConfig().events.get(event.getId());
                                 if (ec != null) {
                                     ec.chancePerDay = val;
+                                    ConfigLoader.save();
                                     ctx.getSource().sendSuccess(() -> Component.literal("§aSet chance per day for §e" + event.getDisplayName() + " §ato §b" + val), false);
                                     return 1;
                                 }

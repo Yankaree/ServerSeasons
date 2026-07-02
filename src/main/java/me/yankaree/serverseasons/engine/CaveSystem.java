@@ -26,8 +26,15 @@ public class CaveSystem {
     public static CaveState getCaveState(ServerLevel world, BlockPos pos) {
         ClimateConfig cfg = ConfigLoader.getConfig();
 
-        int skyLight = world.getBrightness(LightLayer.SKY, pos);
-        boolean isUnderground = skyLight == 0 && pos.getY() < 55;
+        boolean canSeeSky = world.canSeeSky(pos);
+        boolean hasSolidAbove = false;
+        for (int dy = 1; dy <= 4; dy++) {
+            if (!world.isEmptyBlock(pos.above(dy))) {
+                hasSolidAbove = true;
+                break;
+            }
+        }
+        boolean isUnderground = !canSeeSky && hasSolidAbove && pos.getY() < 55;
 
         if (!isUnderground) {
             return new CaveState(false, 0.0, 0.0, null);

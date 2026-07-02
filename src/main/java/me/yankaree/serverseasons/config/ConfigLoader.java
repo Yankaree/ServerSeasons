@@ -32,6 +32,7 @@ public class ConfigLoader {
         try {
             Map<String, Object> parsed = parseYaml(CONFIG_FILE);
             applyConfig(parsed);
+            me.yankaree.serverseasons.engine.ClimateCache.clear();
             ServerSeasons.LOGGER.info("Climate simulation config successfully loaded/reloaded.");
             return true;
         } catch (Exception e) {
@@ -400,10 +401,10 @@ public class ConfigLoader {
             writer.write("    weather_override: \"clear\"\n");
             writer.write("  severe_thunderstorm:\n");
             writer.write("    enabled: true\n");
-            writer.write("    chance_per_day: 0.1\n");
+            writer.write("    chance_per_day: 0.01\n");
             writer.write("    minimum_duration: 12000\n");
             writer.write("    maximum_duration: 36000\n");
-            writer.write("    cooldown: 24000\n");
+            writer.write("    cooldown: 72000\n");
             writer.write("    temperature_modifier: -2.0\n");
             writer.write("    humidity_modifier: 0.2\n");
             writer.write("    wind_modifier: 1.2\n");
@@ -429,6 +430,87 @@ public class ConfigLoader {
             writer.write("    drought: 0.50\n");
         } catch (IOException e) {
             ServerSeasons.LOGGER.error("Failed to write default climate-config.yml", e);
+        }
+    }
+
+    public static boolean save() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(CONFIG_FILE))) {
+            ClimateConfig cfg = currentConfig;
+
+            writer.write("defaultSmoothingFactor: " + cfg.defaultSmoothingFactor + "\n");
+            writer.write("comfortMin: " + cfg.comfortMin + "\n");
+            writer.write("comfortMax: " + cfg.comfortMax + "\n");
+            writer.write("coldSlowness: " + cfg.coldSlowness + "\n");
+            writer.write("coldExtreme: " + cfg.coldExtreme + "\n");
+            writer.write("hotDamage: " + cfg.hotDamage + "\n");
+            writer.write("hotExtreme: " + cfg.hotExtreme + "\n");
+            writer.write("equilibrium: " + cfg.equilibrium + "\n\n");
+
+            writer.write("altitudeBaseY: " + cfg.altitudeBaseY + "\n");
+            writer.write("altitudeLapseRate: " + cfg.altitudeLapseRate + "\n");
+            writer.write("altitudeMinClamp: " + cfg.altitudeMinClamp + "\n");
+            writer.write("altitudeMaxClamp: " + cfg.altitudeMaxClamp + "\n\n");
+
+            writer.write("caveShallowOffset: " + cfg.caveShallowOffset + "\n");
+            writer.write("caveDeepMin: " + cfg.caveDeepMin + "\n");
+            writer.write("caveDeepMax: " + cfg.caveDeepMax + "\n");
+            writer.write("caveLavaHeatModifier: " + cfg.caveLavaHeatModifier + "\n");
+            writer.write("caveLavaRange: " + cfg.caveLavaRange + "\n\n");
+
+            writer.write("hudFormat: \"" + cfg.hudFormat.replace("\"", "\\\"") + "\"\n");
+            writer.write("hudUpdateTicks: " + cfg.hudUpdateTicks + "\n\n");
+
+            writer.write("seasons:\n");
+            for (Map.Entry<String, ClimateConfig.SeasonConfig> entry : cfg.seasons.entrySet()) {
+                ClimateConfig.SeasonConfig s = entry.getValue();
+                writer.write("  " + entry.getKey() + ":\n");
+                writer.write("    tempModifierMin: " + s.tempModifierMin + "\n");
+                writer.write("    tempModifierMax: " + s.tempModifierMax + "\n");
+                writer.write("    probClear: " + s.probClear + "\n");
+                writer.write("    probRain: " + s.probRain + "\n");
+                writer.write("    probThunder: " + s.probThunder + "\n");
+                writer.write("    probSnow: " + s.probSnow + "\n");
+                writer.write("    icon: \"" + (s.icon != null ? s.icon.replace("\"", "\\\"") : "") + "\"\n");
+            }
+
+            writer.write("\nbiomes:\n");
+            for (Map.Entry<String, ClimateConfig.BiomeConfig> entry : cfg.biomes.entrySet()) {
+                ClimateConfig.BiomeConfig b = entry.getValue();
+                writer.write("  " + entry.getKey() + ":\n");
+                writer.write("    baseTemp: " + b.baseTemp + "\n");
+                writer.write("    baseHumidity: " + b.baseHumidity + "\n");
+                writer.write("    noiseMultiplier: " + b.noiseMultiplier + "\n");
+                writer.write("    terrainType: \"" + (b.terrainType != null ? b.terrainType : "plains") + "\"\n");
+            }
+
+            writer.write("\nevents:\n");
+            for (Map.Entry<String, ClimateConfig.EventConfig> entry : cfg.events.entrySet()) {
+                ClimateConfig.EventConfig e = entry.getValue();
+                writer.write("  " + entry.getKey() + ":\n");
+                writer.write("    enabled: " + e.enabled + "\n");
+                writer.write("    chance_per_day: " + e.chancePerDay + "\n");
+                writer.write("    minimum_duration: " + e.minDurationTicks + "\n");
+                writer.write("    maximum_duration: " + e.maxDurationTicks + "\n");
+                writer.write("    cooldown: " + e.cooldownTicks + "\n");
+                writer.write("    temperature_modifier: " + e.tempModifier + "\n");
+                writer.write("    humidity_modifier: " + e.humidityModifier + "\n");
+                writer.write("    wind_modifier: " + e.windModifier + "\n");
+                writer.write("    weather_override: \"" + (e.weatherOverride != null ? e.weatherOverride : "none") + "\"\n");
+            }
+
+            writer.write("\neventChaining:\n");
+            for (Map.Entry<String, Map<String, Double>> entry : cfg.eventChaining.entrySet()) {
+                writer.write("  " + entry.getKey() + ":\n");
+                for (Map.Entry<String, Double> inner : entry.getValue().entrySet()) {
+                    writer.write("    " + inner.getKey() + ": " + inner.getValue() + "\n");
+                }
+            }
+
+            ServerSeasons.LOGGER.info("Climate configuration saved.");
+            return true;
+        } catch (IOException e) {
+            ServerSeasons.LOGGER.error("Failed to save climate-config.yml", e);
+            return false;
         }
     }
 }
